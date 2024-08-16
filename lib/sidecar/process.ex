@@ -75,9 +75,16 @@ defmodule Sidecar.Process do
 
     command = opts |> Keyword.fetch!(:command) |> normalize_command()
 
+    executable_path =
+      if path = System.get_env("PORTWRAP_PATH") do
+        path
+      else
+        Path.join([__DIR__, "..", "..", "portwrap.sh"])
+      end
+
     port =
       Port.open(
-        {:spawn_executable, Path.join([__DIR__, "..", "..", "portwrap.sh"])},
+        {:spawn_executable, executable_path},
         [
           :exit_status,
           line: Keyword.get(opts, :line_length, 1024),
@@ -95,7 +102,7 @@ defmodule Sidecar.Process do
   end
 
   def handle_info({_port, {:exit_status, exit_status}}, state) do
-    Logger.warn("process_exit=#{exit_status}")
+    Logger.warning("process_exit=#{exit_status}")
     {:stop, {:shutdown, {:process_exit, exit_status}}, state}
   end
 
